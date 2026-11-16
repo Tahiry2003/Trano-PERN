@@ -1,12 +1,10 @@
-
 import { Link, NavLink } from "react-router-dom";
-import { Home, Plus, ArrowUpRight } from "lucide-react";
+import { Home, Plus, ArrowUpRight, LogOut } from "lucide-react";
 
-
-export default function Header({ onLoginClick }) {
+export default function Header({ onLoginClick, user, onLogout, favoritesCount = 0 }) {
   return (
     <header className="sticky top-0 z-50 border-b border-[#e9e7df]/80 bg-[#fffefa]/90 backdrop-blur-xl">
-      <div className="mx-auto flex h-[76px] max-w-[1200px] items-center justify-between px-5 lg:px-8">
+      <div className="mx-auto flex h-[76px] max-w-[1300px] items-center justify-between px-5 lg:px-8">
 
         {/* Logo : conservé */}
         <div className="flex h-full items-center gap-10">
@@ -25,7 +23,7 @@ export default function Header({ onLoginClick }) {
             <NavLink
               to="/"
               className={({ isActive }) =>
-                `relative flex h-full items-center text-[13px] font-medium transition-colors duration-200
+                `relative flex h-full items-center text-[12px] font-medium transition-colors duration-200
                 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-[#244d40]
                 after:transition-all after:duration-300
                 ${isActive
@@ -36,17 +34,71 @@ export default function Header({ onLoginClick }) {
             >
               Trouver un logement
             </NavLink>
+
+            {/* Navigation utilisateur connecté */}
+            {user && (
+              <>
+                <NavLink to="/favorites" className="text-[12px] font-medium text-[#737c74] transition-colors hover:text-[#244d40]">
+                  Mes favoris {favoritesCount}
+                </NavLink>
+
+                <NavLink to="/requests" className="text-[12px] font-medium text-[#737c74] transition-colors hover:text-[#244d40]">
+                  Mes demandes
+                </NavLink>
+
+                <NavLink to="/rentals" className="text-[12px] font-medium text-[#737c74] transition-colors hover:text-[#244d40]">
+                  Mes locations
+                </NavLink>
+
+                <NavLink to="/visits" className="text-[12px] font-medium text-[#737c74] transition-colors hover:text-[#244d40]">
+                  Mes visites
+                </NavLink>
+
+                <NavLink to="/maintenance" className="text-[12px] font-medium text-[#737c74] transition-colors hover:text-[#244d40]">
+                  Maintenance
+                </NavLink>
+              </>
+            )}
           </nav>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-3 sm:gap-6">
-          <button
-            onClick={onLoginClick}
-            className="hidden text-[13px] font-medium text-[#40564b] transition-colors hover:text-[#879b70] sm:block"
-          >
-            Se connecter
-          </button>
+
+          {user ? (
+            <div className="flex items-center gap-2.5">
+              <Link
+                to="/profile"
+                title="Voir mon profil"
+                className="flex items-center gap-2.5"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#244d40] text-sm font-semibold text-white">
+                  {user.name?.trim()?.charAt(0).toUpperCase()}
+                </span>
+
+                <span className="max-w-[110px] text-[13px] font-medium text-[#40564b]">
+                  {user.name?.slice(0, 5)}...
+                </span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={onLogout}
+                title="Se déconnecter"
+                aria-label="Se déconnecter"
+                className="text-[#737c74] transition-colors hover:text-red-600"
+              > 
+                <LogOut size={20} strokeWidth={1.8} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onLoginClick}
+              className="hidden text-[13px] font-medium text-[#40564b] transition-colors hover:text-[#879b70] sm:block"
+            >
+              Se connecter
+            </button>
+          )}
 
           <Link
             to="/publish"

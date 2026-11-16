@@ -376,7 +376,7 @@ export default function FeaturedProperties() {
   };
 
   return (
-    <section className="mx-auto max-w-[1080px] px-5 pb-20 pt-8 lg:px-0">
+    <section className="mx-auto max-w-[1200px] px-5 pb-20 pt-8 lg:px-0">
 
       {/* Section heading */}
       <div className="mb-7 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">

@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pool from "../config/db.js";
 
-const ALLOWED_ROLES = ["recherche", "publication"];
+const ALLOWED_ROLES = ["locataire", "proprietaire"];
 
 // Génération du JWT
 function generateToken(user) {

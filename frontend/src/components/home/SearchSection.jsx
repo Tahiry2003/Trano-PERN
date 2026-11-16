@@ -87,7 +87,7 @@ export default function SearchSection() {
   };
 
   return (
-    <section className="relative z-10 mx-auto max-w-[1080px] px-5 lg:px-0">
+    <section className="relative z-10 mx-auto max-w-[1200px] px-5 lg:px-0">
 
       {/* Main Search Card */}
       <div className="rounded-2xl border border-[#e9e7df] bg-white p-4 shadow-[0_12px_40px_rgba(39,57,44,0.055)] sm:p-5">

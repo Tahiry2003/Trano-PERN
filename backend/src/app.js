@@ -5,11 +5,23 @@ import helmet from "helmet";
 import morgan from "morgan";
 import dotenv from "dotenv";
 
+import path from "path";
+import { fileURLToPath } from "url";
+
 import authRoutes from "./routes/auth.routes.js";
+import userRoutes from "./routes/user.routes.js";
 
 dotenv.config();
 
 const app = express();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(
+  "/uploads",
+  express.static(path.resolve(__dirname, "../uploads"))
+);
 
 // Middlewares de sécurité et de traitement
 app.use(helmet());
@@ -33,6 +45,7 @@ app.get("/api/health", (req, res) => {
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
 // Route inconnue
 app.use((req, res) => {

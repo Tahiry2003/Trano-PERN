@@ -96,7 +96,7 @@ function HouseIllustration() {
 
 export default function HeroSection() {
   return (
-    <section className="mx-auto grid max-w-[1080px] grid-cols-1 items-center gap-12 px-5 pb-12 pt-12 md:grid-cols-2 md:gap-14 md:pb-14 md:pt-14 lg:px-0">
+    <section className="mx-auto grid max-w-[1200px] grid-cols-1 items-center gap-12 px-5 pb-12 pt-12 md:grid-cols-2 md:gap-14 md:pb-14 md:pt-14 lg:px-0">
 
       {/* Text */}
       <div className="order-2 md:order-1">

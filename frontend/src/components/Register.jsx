@@ -17,13 +17,13 @@ const API_URL = (
 // Types de compte
 const USER_TYPES = [
   {
-    value: "recherche",
-    label: "Trouver un logement",
+    value: "locataire",
+    label: "Locataire",
     icon: Search,
   },
   {
-    value: "publication",
-    label: "Publier une annonce",
+    value: "proprietaire",
+    label: "Propriétaire",
     icon: PlusCircle,
   },
 ];
@@ -35,7 +35,7 @@ export default function Register({
   showToast,
 }) {
   const [name, setName] = useState("");
-  const [role, setRole] = useState("recherche");
+  const [role, setRole] = useState("locataire");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,17 +67,19 @@ export default function Register({
     const normalizedEmail = email.trim().toLowerCase();
     const trimmedPhone = phone.trim();
 
-    // Validation
+    // Validation du nom
     if (trimmedName.length < 2 || trimmedName.length > 120) {
       setError("Le nom doit contenir entre 2 et 120 caractères.");
       return;
     }
 
-    if (!["recherche", "publication"].includes(role)) {
+    // Validation du type de compte
+    if (!["locataire", "proprietaire"].includes(role)) {
       setError("Veuillez sélectionner un type de compte valide.");
       return;
     }
 
+    // Validation du mot de passe
     if (password !== confirmPassword) {
       setError("Les mots de passe ne correspondent pas.");
       return;
@@ -88,6 +90,7 @@ export default function Register({
       return;
     }
 
+    // Validation du téléphone
     if (trimmedPhone.length > 30) {
       setError("Le numéro de téléphone est trop long.");
       return;
@@ -154,7 +157,7 @@ export default function Register({
       // Fermer Register
       onClose?.();
 
-      // Afficher notification de succès
+      // Notification de succès
       showToast?.("Votre compte a été créé avec succès !");
 
       // Ouvrir Login
