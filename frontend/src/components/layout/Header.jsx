@@ -2,7 +2,8 @@
 import { Link, NavLink } from "react-router-dom";
 import { Home, Plus, ArrowUpRight } from "lucide-react";
 
-export default function Header() {
+
+export default function Header({ onLoginClick }) {
   return (
     <header className="sticky top-0 z-50 border-b border-[#e9e7df]/80 bg-[#fffefa]/90 backdrop-blur-xl">
       <div className="mx-auto flex h-[76px] max-w-[1200px] items-center justify-between px-5 lg:px-8">
@@ -40,12 +41,12 @@ export default function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-3 sm:gap-6">
-          <Link
-            to="/login"
+          <button
+            onClick={onLoginClick}
             className="hidden text-[13px] font-medium text-[#40564b] transition-colors hover:text-[#879b70] sm:block"
           >
             Se connecter
-          </Link>
+          </button>
 
           <Link
             to="/publish"

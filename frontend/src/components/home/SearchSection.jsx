@@ -14,7 +14,6 @@ import {
   Castle,
   X,
   RotateCcw,
-  Check,
   Wallet,
   Sparkles,
 } from "lucide-react";
