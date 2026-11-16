@@ -19,6 +19,8 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import CustomDropdown from "../ui/CustomDropdown";
+
 const PROPERTY_TYPES = [
   { value: "", label: "Tous", icon: Home },
   { value: "maison", label: "Maison", icon: Home },
@@ -31,6 +33,7 @@ const ROOM_OPTIONS = ["1", "2", "3", "4"];
 
 const inputClass =
   "w-full bg-transparent text-[13px] font-medium text-[#34483d] outline-none placeholder:font-normal placeholder:text-[#a0a399]";
+  
 
 export default function SearchSection() {
   const navigate = useNavigate();
@@ -141,18 +144,15 @@ export default function SearchSection() {
                   className="shrink-0 text-[#84957b]"
                 />
 
-                <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className={inputClass}
-                >
-                  <option value="">Tous les types</option>
-                  {PROPERTY_TYPES.slice(1).map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="min-w-0 flex-1">
+                  <CustomDropdown
+                    options={PROPERTY_TYPES}
+                    value={type}
+                    onChange={setType}
+                    placeholder="Tous les types"
+                    size="md"
+                  />
+                </div>
               </div>
             </div>
 
