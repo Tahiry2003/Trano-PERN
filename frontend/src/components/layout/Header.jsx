@@ -23,7 +23,7 @@ export default function Header({ onLoginClick }) {
           {/* Navigation */}
           <nav className="hidden h-full items-center gap-8 sm:flex">
             <NavLink
-              to="/properties"
+              to="/"
               className={({ isActive }) =>
                 `relative flex h-full items-center text-[13px] font-medium transition-colors duration-200
                 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-[#244d40]

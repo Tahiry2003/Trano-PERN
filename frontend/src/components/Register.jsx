@@ -5,9 +5,14 @@ import {
   EyeOff,
   Search,
   PlusCircle,
+  LoaderCircle,
 } from "lucide-react";
 
 import CustomDropdown from "../components/ui/CustomDropdown";
+
+const API_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+).replace(/\/$/, "");
 
 // Types de compte
 const USER_TYPES = [
@@ -23,7 +28,12 @@ const USER_TYPES = [
   },
 ];
 
-export default function Register({ onClose, onLogin, onRegister }) {
+export default function Register({
+  onClose,
+  onLogin,
+  onRegister,
+  showToast,
+}) {
   const [name, setName] = useState("");
   const [role, setRole] = useState("recherche");
   const [phone, setPhone] = useState("");
@@ -33,48 +43,143 @@ export default function Register({ onClose, onLogin, onRegister }) {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Bloquer le scroll de la page arrière
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
     };
   }, []);
 
   // Soumission du formulaire
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    const trimmedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    const trimmedPhone = phone.trim();
+
+    // Validation
+    if (trimmedName.length < 2 || trimmedName.length > 120) {
+      setError("Le nom doit contenir entre 2 et 120 caractères.");
+      return;
+    }
+
+    if (!["recherche", "publication"].includes(role)) {
+      setError("Veuillez sélectionner un type de compte valide.");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Les mots de passe ne correspondent pas.");
       return;
     }
 
-    if (password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères.");
+    if (password.length < 8 || password.length > 72) {
+      setError("Le mot de passe doit contenir entre 8 et 72 caractères.");
       return;
     }
 
-    const userData = {
-      name,
-      role,
-      phone,
-      email,
-      password,
-    };
+    if (trimmedPhone.length > 30) {
+      setError("Le numéro de téléphone est trop long.");
+      return;
+    }
 
-    if (onRegister) {
-      onRegister(userData);
+    if (loading) return;
+
+    setLoading(true);
+
+    try {
+      const userData = {
+        name: trimmedName,
+        role,
+        phone: trimmedPhone || null,
+        email: normalizedEmail,
+        password,
+      };
+
+      // Appel API
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      // Gestion des erreurs HTTP
+      if (!response.ok) {
+        if (response.status === 409) {
+          throw new Error("Cette adresse email est déjà utilisée.");
+        }
+
+        if (response.status === 400) {
+          throw new Error(
+            data.message || "Les informations fournies sont invalides."
+          );
+        }
+
+        if (response.status === 429) {
+          throw new Error(
+            "Trop de tentatives. Réessaie dans quelques minutes."
+          );
+        }
+
+        throw new Error(
+          data.message || "Une erreur est survenue lors de l'inscription."
+        );
+      }
+
+      // Vérifier la réponse du backend
+      if (!data.success || !data.user) {
+        throw new Error("La réponse du serveur est invalide.");
+      }
+
+      // Callback parent : ne pas connecter automatiquement
+      if (onRegister) {
+        await onRegister(data);
+      }
+
+      // Fermer Register
+      onClose?.();
+
+      // Afficher notification de succès
+      showToast?.("Votre compte a été créé avec succès !");
+
+      // Ouvrir Login
+      onLogin?.();
+
+    } catch (err) {
+      console.error("Erreur inscription :", err);
+
+      if (err instanceof TypeError) {
+        setError(
+          "Impossible de contacter le serveur. Vérifie que le backend est démarré."
+        );
+      } else {
+        setError(
+          err.message || "Une erreur inattendue est survenue."
+        );
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Styles des champs
+  // Styles
   const inputClass =
-    "h-[40px] w-full rounded-md border border-[#d9ddd6] bg-white px-3 text-[12px] text-[#26372e] outline-none transition focus:border-[#244d3e] focus:ring-2 focus:ring-[#244d3e]/10";
+    "h-[40px] w-full rounded-md border border-[#d9ddd6] bg-white px-3 text-[12px] text-[#26372e] outline-none transition focus:border-[#244d3e] focus:ring-2 focus:ring-[#244d3e]/10 disabled:cursor-not-allowed disabled:opacity-60";
 
   const labelClass =
     "mb-[7px] block text-[11px] font-semibold text-[#45534a]";
@@ -92,7 +197,8 @@ export default function Register({ onClose, onLogin, onRegister }) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-3 z-10 text-[25px] text-[#34443a] transition hover:rotate-90"
+          disabled={loading}
+          className="absolute right-4 top-3 z-10 text-[25px] text-[#34443a] disabled:opacity-40"
           aria-label="Fermer"
         >
           ×
@@ -124,6 +230,10 @@ export default function Register({ onClose, onLogin, onRegister }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              minLength={2}
+              maxLength={120}
+              disabled={loading}
+              autoComplete="name"
               className={inputClass}
             />
           </div>
@@ -153,6 +263,9 @@ export default function Register({ onClose, onLogin, onRegister }) {
               placeholder="Votre numéro de téléphone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              maxLength={30}
+              disabled={loading}
+              autoComplete="tel"
               className={inputClass}
             />
           </div>
@@ -169,6 +282,9 @@ export default function Register({ onClose, onLogin, onRegister }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              maxLength={190}
+              disabled={loading}
+              autoComplete="email"
               className={inputClass}
             />
           </div>
@@ -187,12 +303,16 @@ export default function Register({ onClose, onLogin, onRegister }) {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
+                maxLength={72}
+                disabled={loading}
+                autoComplete="new-password"
                 className={`${inputClass} pr-11`}
               />
 
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858780] hover:text-[#214d3c]"
                 aria-label={
                   showPassword
@@ -222,6 +342,8 @@ export default function Register({ onClose, onLogin, onRegister }) {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                disabled={loading}
+                autoComplete="new-password"
                 className={`${inputClass} pr-11`}
               />
 
@@ -230,6 +352,7 @@ export default function Register({ onClose, onLogin, onRegister }) {
                 onClick={() =>
                   setShowConfirmPassword(!showConfirmPassword)
                 }
+                disabled={loading}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858780] hover:text-[#214d3c]"
                 aria-label={
                   showConfirmPassword
@@ -248,7 +371,10 @@ export default function Register({ onClose, onLogin, onRegister }) {
 
           {/* Erreur */}
           {error && (
-            <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-[11px] text-red-600">
+            <p
+              role="alert"
+              className="mb-4 rounded-md bg-red-50 px-3 py-2 text-[11px] text-red-600"
+            >
               {error}
             </p>
           )}
@@ -256,10 +382,20 @@ export default function Register({ onClose, onLogin, onRegister }) {
           {/* Bouton inscription */}
           <button
             type="submit"
-            className="flex h-[46px] w-full items-center justify-center gap-3 rounded-lg bg-[#214d3c] text-[12px] font-semibold text-white transition hover:bg-[#173b2d]"
+            disabled={loading}
+            className="flex h-[46px] w-full items-center justify-center gap-3 rounded-lg bg-[#214d3c] text-[12px] font-semibold text-white transition hover:bg-[#173b2d] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Créer mon compte
-            <span className="text-[19px]">→</span>
+            {loading ? (
+              <>
+                <LoaderCircle size={17} className="animate-spin" />
+                Création du compte...
+              </>
+            ) : (
+              <>
+                Créer mon compte
+                <span className="text-[19px]">→</span>
+              </>
+            )}
           </button>
         </form>
 
@@ -270,6 +406,7 @@ export default function Register({ onClose, onLogin, onRegister }) {
           <button
             type="button"
             onClick={onLogin}
+            disabled={loading}
             className="ml-2 font-bold text-[#304d3e] underline hover:text-[#b07f32]"
           >
             Se connecter
