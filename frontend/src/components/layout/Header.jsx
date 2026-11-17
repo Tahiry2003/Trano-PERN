@@ -1,12 +1,41 @@
+
 import { Link, NavLink } from "react-router-dom";
 import { Home, Plus, ArrowUpRight, LogOut } from "lucide-react";
 
-export default function Header({ onLoginClick, user, onLogout, favoritesCount = 0 }) {
+const API_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+).replace(/\/$/, "");
+
+const SERVER_URL = API_URL.replace(/\/api$/, "");
+
+export default function Header({
+  onLoginClick,
+  user,
+  onLogout,
+  favoritesCount = 0,
+}) {
+  const getUserInitials = (name = "") => {
+    return name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("");
+  };
+
+  // Récupération de l'avatar comme dans ProfilPage
+  const avatarUrl = user?.avatar_path
+    ? user.avatar_path.startsWith("http")
+      ? user.avatar_path
+      : `${SERVER_URL}${user.avatar_path}`
+    : null;
+
   return (
     <header className="sticky top-0 z-50 border-b border-[#e9e7df]/80 bg-[#fffefa]/90 backdrop-blur-xl">
       <div className="mx-auto flex h-[76px] max-w-[1300px] items-center justify-between px-5 lg:px-8">
 
-        {/* Logo : conservé */}
+        {/* Logo */}
         <div className="flex h-full items-center gap-10">
           <Link to="/" className="group flex shrink-0 items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#244d40] text-white transition-transform duration-300 group-hover:scale-105">
@@ -26,16 +55,16 @@ export default function Header({ onLoginClick, user, onLogout, favoritesCount = 
                 `relative flex h-full items-center text-[12px] font-medium transition-colors duration-200
                 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-[#244d40]
                 after:transition-all after:duration-300
-                ${isActive
-                  ? "text-[#244d40] after:w-full"
-                  : "text-[#737c74] after:w-0 hover:text-[#244d40] hover:after:w-full"
+                ${
+                  isActive
+                    ? "text-[#244d40] after:w-full"
+                    : "text-[#737c74] after:w-0 hover:text-[#244d40] hover:after:w-full"
                 }`
               }
             >
               Trouver un logement
             </NavLink>
 
-            {/* Navigation utilisateur connecté */}
             {user && (
               <>
                 <NavLink to="/favorites" className="text-[12px] font-medium text-[#737c74] transition-colors hover:text-[#244d40]">
@@ -64,7 +93,6 @@ export default function Header({ onLoginClick, user, onLogout, favoritesCount = 
 
         {/* Actions */}
         <div className="flex items-center gap-3 sm:gap-6">
-
           {user ? (
             <div className="flex items-center gap-2.5">
               <Link
@@ -72,9 +100,20 @@ export default function Header({ onLoginClick, user, onLogout, favoritesCount = 
                 title="Voir mon profil"
                 className="flex items-center gap-2.5"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#244d40] text-sm font-semibold text-white">
-                  {user.name?.trim()?.charAt(0).toUpperCase()}
-                </span>
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Photo de profil"
+                    className="h-9 w-9 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#244d40] text-sm font-semibold text-white">
+                    {getUserInitials(user.name)}
+                  </span>
+                )}
 
                 <span className="max-w-[110px] text-[13px] font-medium text-[#40564b]">
                   {user.name?.slice(0, 5)}...
@@ -87,7 +126,7 @@ export default function Header({ onLoginClick, user, onLogout, favoritesCount = 
                 title="Se déconnecter"
                 aria-label="Se déconnecter"
                 className="text-[#737c74] transition-colors hover:text-red-600"
-              > 
+              >
                 <LogOut size={20} strokeWidth={1.8} />
               </button>
             </div>

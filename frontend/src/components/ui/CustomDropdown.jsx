@@ -164,7 +164,7 @@ export default function CustomDropdown({
 
         <div
           role="listbox"
-          className="max-h-60 overflow-y-auto p-1.5"
+          className="max-h-60 overflow-y-auto p-1.5 -mb-1.5"
         >
           {filteredOptions.length > 0 ? (
             filteredOptions.map((option) => {
@@ -181,7 +181,7 @@ export default function CustomDropdown({
                   onClick={() => selectOption(option)}
                   className={`
                     flex w-full items-center justify-between gap-3
-                    rounded-lg px-3 py-2.5 text-left
+                    rounded-lg px-3 py-2.5 mb-1.5 text-left
                     transition-colors duration-150
                     ${
                       selected
