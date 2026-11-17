@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import CustomDropdown from "../ui/CustomDropdown";
 
@@ -14,6 +14,7 @@ import {
   X,
   ArrowRight,
   Home,
+  ArrowDown,
 } from "lucide-react";
 
 const properties = [
@@ -82,8 +83,10 @@ const SORT_OPTIONS = [
   { value: "price-desc", label: "Prix décroissant" },
 ];
 
-// Convertit "850 000 Ar" en nombre.
-// Retourne null lorsque le prix est inconnu.
+// --------------------------------------------------
+// UTILITAIRES
+// --------------------------------------------------
+
 function getNumericPrice(price) {
   const numericPrice = Number(price.replace(/[^\d]/g, ""));
 
@@ -148,15 +151,79 @@ function PropertyVisual({ property, isModal = false }) {
 // --------------------------------------------------
 
 function PropertyModal({ property, onClose }) {
+  const [hasMoreContent, setHasMoreContent] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(false);
+
+  const scrollRef = useRef(null);
+  const contentRef = useRef(null);
+
+  // Bloquer le scroll de la page derrière la modale
   useEffect(() => {
     if (!property) return;
+
+    const previousOverflow = document.body.style.overflow;
 
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = previousOverflow;
     };
   }, [property]);
+
+  // Vérifier la hauteur du contenu
+  useEffect(() => {
+    if (!property) return;
+
+    const element = scrollRef.current;
+
+    if (!element) return;
+
+    const checkScroll = () => {
+      const scrollElement = scrollRef.current;
+
+      if (!scrollElement) return;
+
+      setHasMoreContent(
+        scrollElement.scrollHeight >
+          scrollElement.clientHeight + 5
+      );
+
+      setIsAtBottom(
+        scrollElement.scrollTop +
+          scrollElement.clientHeight >=
+          scrollElement.scrollHeight - 10
+      );
+    };
+
+    checkScroll();
+
+    const observer = new ResizeObserver(checkScroll);
+
+    observer.observe(element);
+
+    if (contentRef.current) {
+      observer.observe(contentRef.current);
+    }
+
+    window.addEventListener("resize", checkScroll);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [property]);
+
+  // Détecter la position du scroll
+  const handleScroll = () => {
+    const element = scrollRef.current;
+
+    if (!element) return;
+
+    setIsAtBottom(
+      element.scrollTop + element.clientHeight >=
+        element.scrollHeight - 10
+    );
+  };
 
   if (!property) return null;
 
@@ -174,155 +241,178 @@ function PropertyModal({ property, onClose }) {
           type="button"
           onClick={onClose}
           aria-label="Fermer la fenêtre"
-          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-600 shadow-sm transition-colors hover:bg-white hover:text-gray-900"
+          className="absolute right-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-600 shadow-sm transition-colors hover:bg-white hover:text-gray-900"
         >
           <X size={18} />
         </button>
 
-        {/* Contenu défilable */}
-        <div className="overflow-y-auto overflow-x-hidden">
-          <PropertyVisual property={property} isModal />
+        {/* Zone défilable */}
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div ref={contentRef}>
+            <PropertyVisual property={property} isModal />
 
-          <div className="p-6 sm:p-8">
-            {/* Localisation */}
-            <p className="flex items-center gap-1.5 text-[12px] text-gray-500">
-              <MapPin size={14} />
-              {property.location}
-            </p>
-
-            {/* Titre et prix */}
-            <h2 className="mt-3 font-serif text-2xl text-[#263d33] sm:text-3xl">
-              {property.title === "Maison familiale"
-                ? "Une maison au calme, proche de la ville"
-                : property.title}
-            </h2>
-
-            <p className="mt-2 text-xl font-medium text-[#263d33]">
-              {property.price}
-              <span className="text-sm font-normal text-gray-500">
-                {" "}{property.period}
-              </span>
-            </p>
-
-            {/* Caractéristiques */}
-            <div className="mt-5 flex flex-wrap items-center gap-5 border-y border-gray-100 py-4 text-[13px] text-gray-600">
-              <span className="flex items-center gap-1.5">
-                <Home size={16} className="text-gray-400" />
-                {property.type}
-              </span>
-
-              <span className="flex items-center gap-1.5">
-                <BedDouble size={16} className="text-gray-400" />
-                {property.rooms} pièces
-              </span>
-
-              <span className="flex items-center gap-1.5">
-                <Maximize2 size={16} className="text-gray-400" />
-                {property.surface} m²
-              </span>
-            </div>
-
-            {/* Propriétaire */}
-            <div className="mt-5 flex items-center justify-between rounded-lg border border-[#e3e9d9] bg-[#f6f8f3] p-3 sm:p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e1e8d5] font-semibold text-[#4a6844]">
-                  {property.owner.initial}
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-[#263d33]">
-                    {property.owner.name}
-                  </p>
-                  <p className="text-[11px] text-gray-500">
-                    {property.owner.role}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                aria-label="Contacter le propriétaire"
-                className="text-gray-500 hover:text-gray-800"
-              >
-                <ArrowRight size={18} />
-              </button>
-            </div>
-
-            {/* Description */}
-            <div className="mt-7">
-              <h3 className="text-sm font-bold text-[#263d33]">
-                Un peu plus sur ce logement
-              </h3>
-
-              <div className="mt-3 space-y-3 text-[13px] leading-relaxed text-gray-600">
-                {property.description.split("\n").map((paragraph, idx) =>
-                  paragraph.trim() !== "" ? (
-                    <p key={idx}>{paragraph}</p>
-                  ) : null
-                )}
-              </div>
-            </div>
-
-            {/* Localisation */}
-            <div className="mt-8 border-t border-gray-100 pt-6">
-              <h3 className="flex items-center gap-2 text-sm font-bold text-[#263d33]">
-                <MapPin size={16} />
-                Où se trouve ce logement ?
-              </h3>
-
-              <div className="mt-3 rounded-lg border border-[#e3e9d9] bg-[#f6f8f3] p-4">
-                <p className="text-sm font-medium text-[#263d33]">
-                  {property.location}
-                </p>
-
-                <p className="mt-1 text-[11px] text-gray-500">
-                  Le propriétaire n'a pas encore placé de repère sur la carte.
-                </p>
-              </div>
-            </div>
-
-            {/* Planifier une visite */}
-            <div className="mt-8 rounded-xl border border-[#e3e9d9] bg-[#f4f6ed] p-6">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#64805e]">
-                Rencontrons-nous
+            <div className="p-6 sm:p-8">
+              {/* Localisation */}
+              <p className="flex items-center gap-1.5 text-[12px] text-gray-500">
+                <MapPin size={14} />
+                {property.location}
               </p>
 
-              <h3 className="mt-1 font-serif text-xl text-[#263d33]">
-                Planifier une visite
-              </h3>
+              {/* Titre et prix */}
+              <h2 className="mt-3 font-serif text-2xl text-[#263d33] sm:text-3xl">
+                {property.title === "Maison familiale"
+                  ? "Une maison au calme, proche de la ville"
+                  : property.title}
+              </h2>
 
-              <p className="mt-2 text-[13px] text-gray-600">
-                Aucun créneau n'est proposé pour le moment. Vous pouvez
-                envoyer une demande d'intérêt au propriétaire.
+              <p className="mt-2 text-xl font-medium text-[#263d33]">
+                {property.price}
+                <span className="text-sm font-normal text-gray-500">
+                  {" "}{property.period}
+                </span>
+              </p>
+
+              {/* Caractéristiques */}
+              <div className="mt-5 flex flex-wrap items-center gap-5 border-y border-gray-100 py-4 text-[13px] text-gray-600">
+                <span className="flex items-center gap-1.5">
+                  <Home size={16} className="text-gray-400" />
+                  {property.type}
+                </span>
+
+                <span className="flex items-center gap-1.5">
+                  <BedDouble size={16} className="text-gray-400" />
+                  {property.rooms} pièces
+                </span>
+
+                <span className="flex items-center gap-1.5">
+                  <Maximize2 size={16} className="text-gray-400" />
+                  {property.surface} m²
+                </span>
+              </div>
+
+              {/* Propriétaire */}
+              <div className="mt-5 flex items-center justify-between rounded-lg border border-[#e3e9d9] bg-[#f6f8f3] p-3 sm:p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e1e8d5] font-semibold text-[#4a6844]">
+                    {property.owner.initial}
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-[#263d33]">
+                      {property.owner.name}
+                    </p>
+
+                    <p className="text-[11px] text-gray-500">
+                      {property.owner.role}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label="Contacter le propriétaire"
+                  className="text-gray-500 hover:text-gray-800"
+                >
+                  <ArrowRight size={18} />
+                </button>
+              </div>
+
+              {/* Description */}
+              <div className="mt-7">
+                <h3 className="text-sm font-bold text-[#263d33]">
+                  Un peu plus sur ce logement
+                </h3>
+
+                <div className="mt-3 space-y-3 text-[13px] leading-relaxed text-gray-600">
+                  {property.description.split("\n").map((paragraph, idx) =>
+                    paragraph.trim() !== "" ? (
+                      <p key={idx}>{paragraph}</p>
+                    ) : null
+                  )}
+                </div>
+              </div>
+
+              {/* Localisation */}
+              <div className="mt-8 border-t border-gray-100 pt-6">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-[#263d33]">
+                  <MapPin size={16} />
+                  Où se trouve ce logement ?
+                </h3>
+
+                <div className="mt-3 rounded-lg border border-[#e3e9d9] bg-[#f6f8f3] p-4">
+                  <p className="text-sm font-medium text-[#263d33]">
+                    {property.location}
+                  </p>
+
+                  <p className="mt-1 text-[11px] text-gray-500">
+                    Le propriétaire n'a pas encore placé de repère sur la carte.
+                  </p>
+                </div>
+              </div>
+
+              {/* Planifier une visite */}
+              <div className="mt-8 rounded-xl border border-[#e3e9d9] bg-[#f4f6ed] p-6">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#64805e]">
+                  Rencontrons-nous
+                </p>
+
+                <h3 className="mt-1 font-serif text-xl text-[#263d33]">
+                  Planifier une visite
+                </h3>
+
+                <p className="mt-2 text-[13px] text-gray-600">
+                  Aucun créneau n'est proposé pour le moment. Vous pouvez
+                  envoyer une demande d'intérêt au propriétaire.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer : tout en bas du contenu défilable */}
+            <div className="border-t border-gray-100 bg-white p-4 sm:px-8 sm:py-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#2b4d3e] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1e3a2e]"
+                >
+                  Je suis intéressé
+                  <ArrowRight size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  <Heart size={16} />
+                  Enregistrer
+                </button>
+              </div>
+
+              <p className="mt-3 text-center text-[10px] text-gray-400">
+                Échangez avec le propriétaire pour organiser une visite.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-gray-100 bg-white p-4 sm:px-8 sm:py-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#2b4d3e] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1e3a2e]"
-            >
-              Je suis intéressé
-              <ArrowRight size={16} />
-            </button>
+        {/* Indicateur de défilement */}
+        {hasMoreContent && !isAtBottom && (
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center bg-gradient-to-t from-[#fffefa] via-[#fffefa]/95 to-transparent pb-5 pt-12">
+            <div className="flex items-center gap-2 rounded-full border border-[#e6e9df] bg-white/95 px-4 py-2 shadow-sm backdrop-blur-sm">
+              <span className="text-[9px] font-medium tracking-wide text-[#788178]">
+                Faites défiler pour découvrir la suite
+              </span>
 
-            <button
-              type="button"
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-            >
-              <Heart size={16} />
-              Enregistrer
-            </button>
+              <ArrowDown
+                size={13}
+                className="animate-bounce text-[#244d40]"
+              />
+            </div>
           </div>
-
-          <p className="mt-3 text-center text-[10px] text-gray-400">
-            Échangez avec le propriétaire pour organiser une visite.
-          </p>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -333,7 +423,6 @@ function PropertyModal({ property, onClose }) {
 // --------------------------------------------------
 
 export default function FeaturedProperties() {
-  // Hooks React : toujours à l'intérieur du composant
   const [favorites, setFavorites] = useState([]);
   const [view, setView] = useState("list");
   const [sort, setSort] = useState("recent");
@@ -428,7 +517,7 @@ export default function FeaturedProperties() {
             </button>
           </div>
 
-          {/* Custom Dropdown : Trier par */}
+          {/* Trier par */}
           <div className="flex items-center gap-2">
             <span className="whitespace-nowrap text-[10px] text-[#899087]">
               Trier par
