@@ -11,6 +11,7 @@ const SERVER_URL = API_URL.replace(/\/api$/, "");
 
 export default function Header({
   onLoginClick,
+  onPublishClick,
   user,
   onLogout,
   favoritesCount = 0,
@@ -86,6 +87,28 @@ export default function Header({
       ? profileUser.avatar_path
       : `${SERVER_URL}${profileUser.avatar_path}`
     : null;
+  
+  const userRole = (profileUser?.role || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  
+  const isProprietaire = userRole === "proprietaire";
+  
+  const handlePublishClick = () => {
+    if (!profileUser) {
+      onLoginClick();
+      return;
+    }
+  
+    if (isProprietaire) {
+      onPublishClick();
+      return;
+    }
+  
+    alert("La publication d'annonces est réservée aux propriétaires.");
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#e9e7df]/80 bg-[#fffefa]/90 backdrop-blur-xl">
@@ -196,8 +219,9 @@ export default function Header({
             </button>
           )}
 
-          <Link
-            to="/publish"
+          <button
+            type="button"
+            onClick={handlePublishClick}
             className="group inline-flex h-[43px] items-center justify-center gap-2 rounded-xl bg-[#244d40] px-4 text-[12px] font-semibold text-white shadow-[0_3px_10px_rgba(36,77,64,0.10)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#193d32] hover:shadow-[0_7px_18px_rgba(36,77,64,0.18)] active:translate-y-0 sm:px-5"
           >
             <Plus size={18} strokeWidth={1.8} />
@@ -206,7 +230,7 @@ export default function Header({
               size={14}
               className="opacity-60 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
             />
-          </Link>
+          </button>
         </div>
       </div>
     </header>

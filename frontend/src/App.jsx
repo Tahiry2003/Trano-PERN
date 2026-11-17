@@ -4,13 +4,17 @@ import { Routes, Route } from "react-router-dom";
 
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
+
 import HomePage from "./components/home/HomePage";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import PublishModal from "./components/PublishModal";
+
 import ProfilPage from "./pages/ProfilPage";
 
 export default function App() {
   const [activeModal, setActiveModal] = useState(null);
+
   const [user, setUser] = useState(() => {
     try {
       const savedUser = localStorage.getItem("user");
@@ -27,10 +31,7 @@ export default function App() {
   const handleLogin = async (data) => {
     setUser(data.user);
 
-    // Conserver la session après actualisation
     localStorage.setItem("user", JSON.stringify(data.user));
-
-    // Stockage temporaire du token
     localStorage.setItem("token", data.token);
 
     setActiveModal(null);
@@ -52,6 +53,14 @@ export default function App() {
     setActiveModal(null);
   };
 
+  // Réception du formulaire de publication
+  const handlePublish = (data) => {
+    console.log("Nouvelle annonce :", data);
+
+    // Ici, nous connecterons le formulaire à l'API PostgreSQL.
+    // Pour le moment, aucune annonce n'est enregistrée en base.
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-[#faf9f5]">
 
@@ -59,21 +68,29 @@ export default function App() {
       <Header
         user={user}
         onLoginClick={() => setActiveModal("login")}
+        onPublishClick={() => setActiveModal("publish")}
         onLogout={handleLogout}
-        favoritesCount={0}
+        favoritesCount={favoritesCount}
       />
 
       {/* Pages */}
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<HomePage />} />
+
           <Route
             path="/profile"
             element={
               user ? (
-                <ProfilPage onUserUpdated={(updatedUser) => {
-                  setUser(updatedUser);
-                }} />
+                <ProfilPage
+                  onUserUpdated={(updatedUser) => {
+                    setUser(updatedUser);
+                    localStorage.setItem(
+                      "user",
+                      JSON.stringify(updatedUser)
+                    );
+                  }}
+                />
               ) : (
                 <HomePage />
               )
@@ -100,6 +117,14 @@ export default function App() {
           onClose={() => setActiveModal(null)}
           onLogin={() => setActiveModal("login")}
           onRegister={handleRegister}
+        />
+      )}
+
+      {/* Modal publication */}
+      {activeModal === "publish" && (
+        <PublishModal
+          onClose={() => setActiveModal(null)}
+          onSubmit={handlePublish}
         />
       )}
 
