@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Home, Plus, ArrowUpRight, LogOut } from "lucide-react";
 
@@ -14,6 +15,61 @@ export default function Header({
   onLogout,
   favoritesCount = 0,
 }) {
+  const [profileUser, setProfileUser] = useState(user || null);
+
+  // Synchroniser les données utilisateur reçues par les props
+  useEffect(() => {
+    setProfileUser(user || null);
+  }, [user]);
+
+  // Récupérer le profil depuis PostgreSQL comme dans ProfilPage
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchProfile = async () => {
+      if (!user) {
+        setProfileUser(null);
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+
+      if (!token) return;
+
+      // Si l'avatar est déjà disponible, inutile de refaire la requête
+      if (user.avatar_path) return;
+
+      try {
+        const response = await fetch(`${API_URL}/users/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Impossible de récupérer le profil."
+          );
+        }
+
+        if (!cancelled && data.user) {
+          setProfileUser(data.user);
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
+      } catch (error) {
+        console.error("Erreur récupération avatar :", error);
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   const getUserInitials = (name = "") => {
     return name
       .trim()
@@ -25,10 +81,10 @@ export default function Header({
   };
 
   // Récupération de l'avatar comme dans ProfilPage
-  const avatarUrl = user?.avatar_path
-    ? user.avatar_path.startsWith("http")
-      ? user.avatar_path
-      : `${SERVER_URL}${user.avatar_path}`
+  const avatarUrl = profileUser?.avatar_path
+    ? profileUser.avatar_path.startsWith("http")
+      ? profileUser.avatar_path
+      : `${SERVER_URL}${profileUser.avatar_path}`
     : null;
 
   return (
@@ -65,7 +121,7 @@ export default function Header({
               Trouver un logement
             </NavLink>
 
-            {user && (
+            {profileUser && (
               <>
                 <NavLink to="/favorites" className="text-[12px] font-medium text-[#737c74] transition-colors hover:text-[#244d40]">
                   Mes favoris {favoritesCount}
@@ -93,7 +149,7 @@ export default function Header({
 
         {/* Actions */}
         <div className="flex items-center gap-3 sm:gap-6">
-          {user ? (
+          {profileUser ? (
             <div className="flex items-center gap-2.5">
               <Link
                 to="/profile"
@@ -102,6 +158,7 @@ export default function Header({
               >
                 {avatarUrl ? (
                   <img
+                    key={avatarUrl}
                     src={avatarUrl}
                     alt="Photo de profil"
                     className="h-9 w-9 rounded-full object-cover"
@@ -111,12 +168,12 @@ export default function Header({
                   />
                 ) : (
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#244d40] text-sm font-semibold text-white">
-                    {getUserInitials(user.name)}
+                    {getUserInitials(profileUser.name)}
                   </span>
                 )}
 
                 <span className="max-w-[110px] text-[13px] font-medium text-[#40564b]">
-                  {user.name?.slice(0, 5)}...
+                  {profileUser.name?.slice(0, 5)}...
                 </span>
               </Link>
 
